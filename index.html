@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Billionaire — منصة التجارة الإلكترونية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #F5F1E8;
+    --surface: #FFFFFF;
+    --border: #E7E0CE;
+    --ink: #14121A;
+    --ink-2: #201C28;
+    --accent: #C9A24B;
+    --accent-light: #E4C688;
+    --accent-dark: #9C7A2F;
+    --accent-soft: #F6EDD3;
+    --success: #256B45;
+    --warn: #B07F1E;
+    --danger: #A63A32;
+    --text: #221F2B;
+    --text-mute: #746E63;
+    --radius: 12px;
+  }
+  .chart-wrap { position: relative; height: 190px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; }
+  button, input, select, textarea { font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif; }
+
+  /* ===== Top bar ===== */
+  .topbar {
+    background: linear-gradient(135deg, var(--ink), var(--ink-2)); color: #fff; display: flex; align-items: center;
+    justify-content: space-between; padding: 12px 18px; position: sticky; top: 0; z-index: 20;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.25);
+    border-bottom: 1px solid rgba(201,162,75,0.25);
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px; letter-spacing: .3px; }
+  .topbar-brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; box-shadow: 0 0 8px rgba(201,162,75,0.7); }
+  .topbar-user { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #C9C4D6; }
+  .topbar-user b { color: #fff; font-weight: 700; }
+  .role-chip {
+    background: rgba(201,162,75,0.18); color: var(--accent-light); border: 1px solid rgba(201,162,75,0.45);
+    padding: 2px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 600; letter-spacing: .2px;
+  }
+  .logout-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.22); color: #fff;
+    padding: 6px 12px; border-radius: 6px; font-size: 11.5px; cursor: pointer;
+    transition: background .15s;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.1); }
+
+  /* Nav */
+  .nav {
+    background: var(--surface);
+    display: flex;
+    overflow-x: auto;
+    position: sticky; top: 49px; z-index: 10;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .nav button {
+    background: none; border: none; color: var(--text-mute);
+    padding: 13px 15px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; border-bottom: 3px solid transparent;
+    transition: color .15s;
+  }
+  .nav button.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .view { display: none; padding: 16px; max-width: 720px; margin: 0 auto; }
+  .view.active { display: block; }
+
+  h2 { font-size: 18px; margin-bottom: 4px; font-weight: 800; color: var(--ink); letter-spacing: .1px; }
+  .subtitle { color: var(--text-mute); font-size: 12.5px; margin-bottom: 16px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(30,22,10,0.045);
+  }
+  .card-title { font-weight: 700; font-size: 13.5px; margin-bottom: 8px; color: var(--ink); }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 6px; text-align: center;
+    box-shadow: 0 2px 8px rgba(30,22,10,0.04);
+  }
+  .stat-num {
+    font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: var(--accent);
+  }
+  .stat-label { font-size: 10px; color: var(--text-mute); margin-top: 3px; letter-spacing: .1px; }
+
+  label { display: block; font-size: 12px; color: #555; margin: 8px 0 3px; font-weight: 500; }
+  input, select {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 13px; background: #FBFBFC; color: var(--text);
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 > div { flex: 1; }
+
+  button.btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #1A1408; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 10px;
+    box-shadow: 0 3px 10px rgba(156,122,47,0.28); transition: filter .15s, transform .1s;
+  }
+  button.btn:hover { filter: brightness(1.06); }
+  button.btn:active { transform: translateY(1px); }
+  button.btn.secondary { background: var(--accent-soft); color: var(--accent-dark); border: 1px solid var(--accent); box-shadow: none; }
+  button.btn.secondary:hover { background: #F0E4BE; filter: none; }
+  button.btn.danger { background: var(--danger); color: #fff; box-shadow: 0 3px 10px rgba(166,58,50,0.25); }
+  button.btn.danger:hover { filter: brightness(1.08); }
+  button.btn.warn { background: var(--warn); color: #fff; }
+  button.btn.small { padding: 6px 11px; font-size: 11.5px; margin-top: 0; }
+
+  .list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid #F1ECDD; font-size: 12.5px;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .badge {
+    display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 600; color: white;
+  }
+  .badge.active { background: var(--success); }
+  .badge.accepted { background: var(--success); }
+  .badge.pending { background: var(--warn); }
+  .badge.disabled { background: #948C7C; }
+  .badge.rejected { background: var(--danger); }
+  .badge.removed { background: #746E63; }
+
+  .invoice-line {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 5px 0; border-bottom: 1px dashed #F1ECDD; font-size: 12px;
+  }
+  .invoice-line:last-child { border-bottom: none; }
+
+  .link-chip {
+    display: inline-block; background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--accent-dark);
+    padding: 6px 11px; border-radius: 6px; font-size: 11.5px; margin-top: 4px; cursor: pointer; font-weight: 600;
+    transition: background .15s;
+  }
+  .link-chip:hover { background: #F0E4BE; }
+
+  .toggle-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .toggle {
+    padding: 7px 13px; border-radius: 7px; font-size: 12px; cursor: pointer; font-weight: 600;
+    border: 1px solid var(--border); background: #FBFAF5; color: var(--text-mute);
+  }
+  .toggle.selected { background: var(--accent); color: #1A1408; border-color: var(--accent); }
+
+  .empty { text-align: center; color: #A2A8B3; font-size: 12.5px; padding: 22px 0; }
+  .toast {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 11px 18px; border-radius: 8px;
+    font-size: 12.5px; opacity: 0; transition: opacity .3s; z-index: 300; pointer-events: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== Auth screens (login / join / public store not-found) ===== */
+  .auth-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(201,162,75,0.20), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(201,162,75,0.13), transparent 45%),
+      linear-gradient(160deg, var(--ink), var(--ink-2));
+  }
+  .auth-card {
+    background: var(--surface); border-radius: 16px; padding: 30px 26px; width: 100%; max-width: 380px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    border-top: 3px solid var(--accent);
+  }
+  .auth-brand { text-align: center; margin-bottom: 22px; }
+  .auth-brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; margin-left: 6px; box-shadow: 0 0 10px rgba(201,162,75,0.6); }
+  .auth-brand-name { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: .2px; }
+  .auth-brand-tag { font-size: 11.5px; color: var(--text-mute); margin-top: 3px; }
+  .auth-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+  .auth-sub { font-size: 12px; color: var(--text-mute); margin-bottom: 16px; }
+  .auth-error { color: var(--danger); font-size: 12px; margin-top: 8px; min-height: 14px; }
+  .auth-switch { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-mute); }
+  .auth-switch a { color: var(--accent-dark); font-weight: 700; cursor: pointer; text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+
+  /* ===== Public storefront (customer-facing, no login) ===== */
+  .public-topbar {
+    background: linear-gradient(135deg, var(--ink), var(--ink-2)); color: #fff; padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+    position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 14px rgba(0,0,0,0.25);
+    border-bottom: 1px solid rgba(201,162,75,0.25);
+  }
+  .public-topbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .public-footer { text-align: center; color: var(--text-mute); font-size: 11px; padding: 22px 0 10px; }
+
+  .store-product {
+    display: flex; flex-direction: column; gap: 8px;
+    border: 1px solid #F0EEE8; border-radius: 6px; padding: 10px; margin-bottom: 8px;
+  }
+  .store-product-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .store-product-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .store-product-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .product-desc { font-size: 11.5px; color: #666; line-height: 1.5; }
+  .product-sizes-label { font-size: 11px; color: #888; }
+  .size-select { margin-top: 2px; }
+  .thumb {
+    width: 44px; height: 44px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+    border: 1px solid #E3E0D8; background: #FAFAF8;
+  }
+  .thumb-placeholder {
+    width: 44px; height: 44px; border-radius: 6px; flex-shrink: 0;
+    border: 1px dashed #D8D5CE; background: #FAFAF8; color: #B8B4AA;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .theme-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  input[type="color"] { width: 44px; height: 34px; padding: 2px; cursor: pointer; border-radius: 6px; }
+  textarea {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 13px; background: #FBFBFC; resize: vertical; min-height: 54px;
+  }
+  .logo-preview {
+    width: 56px; height: 56px; border-radius: 8px; object-fit: cover;
+    border: 1px solid var(--border); background: #FBFBFC;
+  }
+  .banner-preview {
+    width: 100%; height: 90px; object-fit: cover;
+    border: 1px solid var(--border); background: #FBFBFC; margin-top: 6px; border-radius: 8px;
+  }
+  .store-banner {
+    width: 100%; height: 130px; border-radius: 10px; object-fit: cover; margin-bottom: 10px;
+  }
+  .store-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .store-logo { width: 44px; height: 44px; border-radius: 9px; object-fit: cover; border: 1px solid var(--border); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,18,28,0.55);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: white; border-radius: 12px; padding: 20px; width: 90%; max-width: 340px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+  .modal-title { font-weight: 700; font-size: 14.5px; margin-bottom: 10px; color: var(--ink); }
+  .modal-text { font-size: 12.5px; color: var(--text-mute); margin-bottom: 10px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .checkout-line {
+    display: flex; justify-content: space-between; font-size: 13px;
+    padding: 7px 0; border-bottom: 1px solid #F0F1F4;
+  }
+  .checkout-line.total { font-weight: 700; font-size: 14.5px; border-bottom: none; padding-top: 10px; }
+  .checkout-line span:first-child { color: var(--text-mute); }
+  .checkout-line.total span:first-child { color: var(--ink); }
+
+  /* ===== Cart ===== */
+  .cart-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer;
+    font-size: 12.5px; font-weight: 700; color: var(--accent-dark);
+  }
+  .cart-bar:hover { background: #F0E4BE; }
+  .cart-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid #F1ECDD; gap: 8px;
+  }
+  .cart-item:last-child { border-bottom: none; }
+  .cart-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .cart-item-name {
+    font-size: 12.5px; font-weight: 600; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;
+  }
+  .cart-item-price { font-size: 11px; color: var(--text-mute); }
+  .cart-item-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .qty-btn {
+    width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+    background: #FBFAF5; color: var(--ink); font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0;
+  }
+  .qty-btn:hover { background: var(--accent-soft); }
+  .qty-num { font-size: 12.5px; font-weight: 700; min-width: 16px; text-align: center; }
+  .cart-remove { background: none; border: none; cursor: pointer; font-size: 13px; padding: 2px 4px; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div class="auth-wrap" id="login-screen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-brand-name"><span class="dot"></span>Billionaire</div>
+      <div class="auth-brand-tag">منصة التجارة الإلكترونية المتكاملة</div>
+    </div>
+    <div class="auth-title">تسجيل الدخول</div>
+    <div class="auth-sub">أدخل بيانات حسابك — أدمن أو تاجر</div>
+    <label>اسم المستخدم</label>
+    <input id="login-username" placeholder="اسم المستخدم" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    <label>كلمة المرور</label>
+    <input type="password" id="login-password" placeholder="كلمة المرور" autocomplete="off" onkeydown="if(event.key==='Enter')platformLogin()">
+    <button class="btn" style="width:100%;" onclick="platformLogin()">دخول</button>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-switch">تاجر جديد ما عندك حساب؟ <a onclick="showJoinScreen()">قدّم طلب انضمام</a></div>
+    <div class="auth-switch" style="margin-top:4px;"><a onclick="openLegalModal()">الشروط والأحكام وسياسة الخصوصية</a></div>
+  </div>
+</div>
+
+<!-- ============ PUBLIC JOIN SCREEN (merchant application, no login needed) ============ -->
+<div class="auth-wrap" id="join-screen" style="display:none;">
+  <div class="auth-card" style="max-width:420px;">
+    <div class="auth-brand">
+      <div class="auth-brand-name"><span class="dot"></span>Billionaire</div>
+      <div class="auth-brand-tag">طلب انضمام تاجر جديد</div>
+    </div>
+    <div class="auth-title">📝 عبّي بياناتك</div>
+    <div class="auth-sub">راح تراجع الإدارة طلبك وترسلك بيانات دخول حسابك بعد الموافقة</div>
+    <label>اسمك</label><input id="req-name" placeholder="مثلاً: احمد محمد">
+    <label>اسم المحل</label><input id="req-shop" placeholder="مثلاً: محل احمد للملابس">
+    <label>رقم الهاتف</label><input id="req-phone" placeholder="07xx xxx xxxx">
+    <label>المحافظة</label>
+    <select id="req-governorate">
+      <option>بغداد</option><option>البصرة</option><option>نينوى</option><option>أربيل</option>
+      <option>النجف</option><option>كربلاء</option><option>الأنبار</option><option>ديالى</option>
+      <option>كركوك</option><option>واسط</option><option>ذي قار</option><option>بابل</option>
+      <option>ميسان</option><option>المثنى</option><option>القادسية</option><option>صلاح الدين</option>
+      <option>دهوك</option><option>السليمانية</option>
+    </select>
+    <label>المنطقة/الحي</label><input id="req-area" placeholder="مثلاً: الأعظمية، أو أي منطقة">
+    <label>محله بشنو مختص</label>
+    <select id="req-category">
+      <option>ملابس وأزياء</option><option>إكسسوارات</option><option>إلكترونيات وموبايلات</option>
+      <option>مواد منزلية</option><option>مستحضرات تجميل</option><option>ألعاب أطفال</option>
+      <option>أحذية</option><option>أخرى</option>
+    </select>
+    <button class="btn" style="width:100%;" onclick="submitRequest()">إرسال الطلب</button>
+    <div class="auth-switch">عندك حساب مسبقاً؟ <a onclick="showLoginScreen()">رجوع لتسجيل الدخول</a></div>
+  </div>
+</div>
+
+<!-- ============ PUBLIC STOREFRONT (customer-facing store link, no login) ============ -->
+<div id="public-store-screen" style="display:none;">
+  <div class="public-topbar">
+    <span class="dot"></span>
+    <span style="font-weight:700; font-size:13.5px;" id="public-store-brand">متجر</span>
+  </div>
+  <div class="view active" style="padding:16px; max-width:640px; margin:0 auto;">
+    <div id="public-storefront-content"></div>
+    <div class="public-footer">مدعوم بواسطة منصة Billionaire — <a onclick="openLegalModal()" style="text-decoration:underline; cursor:pointer;">الشروط وسياسة الخصوصية</a></div>
+  </div>
+</div>
+
+<!-- ============ MAIN APP (after login) ============ -->
+<div id="app-shell" style="display:none;">
+<div class="topbar">
+  <div class="topbar-brand"><span class="dot"></span>Billionaire</div>
+  <div class="topbar-user">
+    <span class="role-chip" id="topbar-role"></span>
+    <span>مرحباً، <b id="topbar-name"></b></span>
+    <button class="logout-btn" onclick="platformLogout()">تسجيل خروج</button>
+  </div>
+</div>
+<div class="nav" id="nav"></div>
+
+<!-- ============ ADMIN DASHBOARD ============ -->
+<div class="view" id="view-dashboard">
+  <h2>لوحة الأدمن</h2>
+  <div class="subtitle">نظرة عامة على المنصة</div>
+
+  <div id="dashboard-content">
+  <div class="grid3">
+    <div class="stat"><div class="stat-num" id="d-orders">0</div><div class="stat-label">عمليات اليوم</div></div>
+    <div class="stat"><div class="stat-num" id="d-fees">0</div><div class="stat-label">رسومك (د)</div></div>
+    <div class="stat"><div class="stat-num" id="d-active">0</div><div class="stat-label">تاجر نشط</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📈 الطلبات آخر 7 أيام</div>
+    <div class="chart-wrap"><canvas id="chart-orders-trend"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💰 رسوم المنصة المحصّلة آخر 7 أيام (دينار)</div>
+    <div class="chart-wrap"><canvas id="chart-fees-trend"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">قائمة المحلات</div>
+    <div id="d-merchant-list"><div class="empty">ما فيه محلات مسجلة بعد</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">التسويات المالية اليومية</div>
+    <div id="d-settlements"><div class="empty">ما فيه عمليات بيع اليوم</div></div>
+  </div>
+  </div>
+</div>
+
+<!-- ============ MERCHANT REQUESTS (admin approval queue) ============ -->
+<div class="view" id="view-requests">
+  <h2>طلبات انضمام التجار</h2>
+  <div class="subtitle">راجع طلبات التجار الجدد ووافق عليهم أو ارفضهم</div>
+
+  <div class="card">
+    <div class="card-title">🔗 رابط دعوة التجار</div>
+    <div class="subtitle" style="margin-bottom:8px;">انسخ هذا الرابط وارسله لأي تاجر تريد يفتح محل — راح يوديه مباشرة لصفحة تعبئة طلب الانضمام، وطلبه راح يظهر بالأسفل بانتظار موافقتك</div>
+    <div class="link-chip" onclick="copyJoinLink()" id="join-link-chip"></div>
+  </div>
+
+  <div class="card" id="pending-requests-card">
+    <div class="card-title">✅ طلبات بانتظار الموافقة</div>
+    <div id="pending-list"><div class="empty">ما فيه طلبات حالياً</div></div>
+  </div>
+
+  <div class="card" id="removal-requests-card">
+    <div class="card-title">🗑️ طلبات حذف قطع من الفواتير</div>
+    <div class="subtitle" style="margin-bottom:8px;">لما تاجر يبلّغ إن قطعة داخل فاتورة زبون غير متوفرة، تظهر هنا وما تنحذف إلا بموافقتك</div>
+    <div id="removal-requests-list"><div class="empty">ما فيه طلبات حذف حالياً</div></div>
+  </div>
+</div>
+
+<!-- ============ ACCOUNTING / FINANCIAL REPORTS ============ -->
+<div class="view" id="view-accounting">
+  <h2>الحسابات</h2>
+  <div class="subtitle">تقرير مالي دقيق بكل العمليات — فلتر حسب التاريخ أو التاجر أو الحالة، وصدّره ملف إكسل وقت ما تريد</div>
+
+  <div class="card">
+    <div class="card-title">🔍 الفلاتر</div>
+    <div class="row2">
+      <div><label>من تاريخ</label><input type="date" id="acc-from" onchange="renderAccounting()"></div>
+      <div><label>إلى تاريخ</label><input type="date" id="acc-to" onchange="renderAccounting()"></div>
+    </div>
+    <label>التاجر</label>
+    <select id="acc-merchant" onchange="renderAccounting()"><option value="all">كل التجار</option></select>
+    <label>حالة الطلب</label>
+    <select id="acc-status" onchange="renderAccounting()">
+      <option value="all">كل الحالات</option>
+      <option value="pending">بانتظار المتجر</option>
+      <option value="accepted">مقبول</option>
+      <option value="rejected">مرفوض</option>
+      <option value="removed">محذوفة من الفاتورة</option>
+    </select>
+    <button class="btn secondary small" style="margin-top:10px;" onclick="resetAccountingFilters()">إعادة تعيين الفلاتر</button>
+  </div>
+
+  <div class="grid3" id="acc-summary"></div>
+  <div class="grid3" id="acc-summary2"></div>
+
+  <div class="card">
+    <div class="card-title">📥 تصدير Excel</div>
+    <div class="subtitle" style="margin-bottom:8px;">يصدّر ملف إكسل فيه ثلاث صفحات: تفاصيل كل الطلبات، ملخص لكل تاجر، والملخص العام — حسب الفلاتر المحددة فوق</div>
+    <button class="btn" onclick="exportAccountingExcel()">تحميل تقرير Excel</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 ملخص حسب التاجر</div>
+    <div id="acc-merchant-summary"><div class="empty">ما فيه بيانات</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🧾 تفاصيل العمليات</div>
+    <div id="acc-orders-table"><div class="empty">ما فيه عمليات مطابقة للفلاتر</div></div>
+  </div>
+</div>
+
+<!-- ============ MERCHANT DASHBOARD ============ -->
+<div class="view" id="view-merchant">
+  <h2>لوحة التاجر</h2>
+  <div class="subtitle">إدارة متجرك، منتجاتك، وطلباتك</div>
+  <div id="merchant-panel"></div>
+</div>
+
+<!-- ============ STOREFRONT PREVIEW (admin-only testing tool) ============ -->
+<div class="view" id="view-store">
+  <h2>معاينة المتاجر</h2>
+  <div class="subtitle">هذي أداة داخلية للأدمن لمعاينة شكل أي متجر — الزبون يدخل مباشرة من رابط المتجر الخاص بالتاجر</div>
+  <div class="card">
+    <label>اختر المتجر</label>
+    <select id="store-select" onchange="renderStorefront()"></select>
+  </div>
+  <div id="storefront-content"></div>
+</div>
+
+<!-- ============ PRICING SETTINGS ============ -->
+<div class="view" id="view-settings">
+  <h2>إعدادات التسعير (الافتراضية)</h2>
+  <div class="subtitle">هذي القيم تُطبّق تلقائياً على أي تاجر جديد ينضم — وبعدها تقدر تعدلها لكل تاجر لحاله من لوحة التاجر</div>
+
+  <div class="card">
+    <div class="card-title">١. مصدر رسم المنصة</div>
+    <div class="toggle-group" id="fee-source-toggles"></div>
+    <label style="margin-top:10px;">طريقة حساب الرسم</label>
+    <div class="toggle-group" id="fee-type-toggles"></div>
+    <label id="fee-amount-label">مبلغ الرسم (دينار)</label>
+    <input type="number" id="fee-amount" onchange="saveSettings()">
+    <div id="both-fields" style="display:none;">
+      <div class="row2">
+        <div><label id="fee-customer-label">من الزبون</label><input type="number" id="fee-customer" onchange="saveSettings()"></div>
+        <div><label id="fee-merchant-label">من التاجر</label><input type="number" id="fee-merchant" onchange="saveSettings()"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">١ب. استقطاع ثابت من كل قطعة (اختياري)</div>
+    <div class="subtitle" style="margin-bottom:4px;">قيمة إضافية بجانب رسم المنصة أعلاه — تُخصم من رصيد التاجر فقط عند قبول كل طلب، ولا تُضاف على سعر القطعة ولا تظهر للزبون إطلاقاً. هذي القيمة الافتراضية لأي تاجر جديد، وتقدر تعدلها لكل تاجر لحاله من "قبول التاجر" أو "تعديل رسوم المنصة"</div>
+    <label>الاستقطاع (دينار لكل قطعة)</label>
+    <input type="number" id="item-deduction" onchange="saveSettings()">
+  </div>
+
+  <div class="card">
+    <div class="card-title">٢. سعر التوصيل الافتراضي</div>
+    <div class="subtitle" style="margin-bottom:4px;">يُستخدم هذا السعر فقط إذا ما كانت محافظة الزبون محددة بقائمة "مناطق الشحن" تحت — إذا حددتها هناك، سعرها يطغى على هذا الرقم</div>
+    <div class="toggle-group" id="shipping-toggle-group"></div>
+    <label>مبلغ التوصيل (دينار)</label>
+    <div class="toggle-group">
+      <span class="toggle" onclick="setShippingAmount(500)">500</span>
+      <span class="toggle" onclick="setShippingAmount(750)">750</span>
+      <span class="toggle" onclick="setShippingAmount(1000)">1000</span>
+    </div>
+    <input type="number" id="shipping-amount" onchange="saveSettings()">
+  </div>
+
+  <div class="card">
+    <div class="card-title">٣. مناطق الشحن للزبون (سريع / بطيء)</div>
+    <div class="subtitle">حدد سعر التوصيل السريع والبطيء لكل محافظة، وحدد إذا أصلاً تريد توفر الشحن السريع أو البطيء بيها — مثلاً محافظة بعيدة توفرلها بطيء بس. الزبون يشوف بس الخيارات المتوفرة لمحافظته. لو ما حددت محافظة معينة، تنطبق عليها أسعار "باقي المحافظات"</div>
+    <div id="zones-list"><div class="empty">ما فيه مناطق محددة بعد</div></div>
+    <label>اسم المحافظة/المنطقة</label>
+    <input list="gov-list" id="zone-name" placeholder="مثلاً: بغداد">
+    <datalist id="gov-list"></datalist>
+    <div class="row2">
+      <div><label>سعر الشحن السريع (د)</label><input type="number" id="zone-fast" placeholder="4000"></div>
+      <div><label>سعر الشحن البطيء (د)</label><input type="number" id="zone-slow" placeholder="2000"></div>
+    </div>
+    <div class="row2" style="margin-top:6px; align-items:center;">
+      <label style="display:flex; align-items:center; gap:6px; margin:0;"><input type="checkbox" id="zone-fast-enabled" checked style="width:auto;"> يتوفر شحن سريع بهذي المنطقة</label>
+      <label style="display:flex; align-items:center; gap:6px; margin:0;"><input type="checkbox" id="zone-slow-enabled" checked style="width:auto;"> يتوفر شحن بطيء بهذي المنطقة</label>
+    </div>
+    <button class="btn small" onclick="addShippingZone()">إضافة / تحديث المنطقة</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">٤. معاينة فورية لكل عملية بيع</div>
+    <div class="subtitle" id="preview-note" style="margin-bottom:8px;"></div>
+    <div class="grid3" id="preview-grid"></div>
+  </div>
+</div>
+
+<!-- ============ ADMIN ACTIONS ============ -->
+<div class="view" id="view-shipping">
+  <h2>التوصيل وإجراءات إدارية</h2>
+
+  <div id="shipping-content">
+  <div class="card">
+    <div class="card-title">📦 إدارة حالة التوصيل</div>
+    <div class="subtitle" style="margin-bottom:8px;">أي فاتورة مقبولة من التاجر وما زالت بانتظار نتيجة التوصيل — تكدر تسجلها واصلة، مرجّعة، أو تلغيها مع كتابة السبب</div>
+    <div id="admin-shipping-control-list"><div class="empty">ما فيه طلبات بانتظار التوصيل حالياً</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗑️ تصفير الحسابات المالية</div>
+    <button class="btn danger small" onclick="resetFinancials('merchants')">تصفير أرصدة التجار</button>
+    <div style="font-size:11px; color:#999; margin-top:8px;">يصفر الأرقام المالية فقط — بيانات الحساب الأساسية تبقى محفوظة</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚙️ إجراءات على تاجر محدد</div>
+    <div id="merchant-actions-list"><div class="empty">ما فيه تجار مسجلين</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 كلمة مرور الأدمن</div>
+    <div class="subtitle" style="margin-bottom:8px;">
+      لحماية الحساب — لازم تكتب كلمة المرور الحالية بالضبط قبل ما تقدر تغيّرها (شرط أمان من Firebase نفسه).
+      <br>ملاحظة: اسم المستخدم (اليوزرنيم) اللي تسجل فيه دخول ثابت ولا يتغيّر — Firebase ما يسمح بتغيير الإيميل بدون تأكيد عبر بريد حقيقي. تقدر بس تغيّر "الاسم المعروض" أدناه.
+    </div>
+    <label>كلمة المرور الحالية</label><input type="password" id="old-admin-password" placeholder="كلمة المرور الحالية">
+    <label>كلمة المرور الجديدة</label><input type="password" id="new-admin-password" placeholder="اتركها فارغة إذا ما تريد تغييرها">
+    <div class="auth-error" id="admin-cred-error"></div>
+    <button class="btn small" onclick="changeAdminPassword()">تحديث كلمة المرور</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">✏️ الاسم المعروض</div>
+    <div class="subtitle" style="margin-bottom:8px;">الاسم اللي يطلع بأعلى اللوحة — تغييره ما يمس حساب الدخول إطلاقاً</div>
+    <input id="admin-display-name" placeholder="مثلاً: أحمد">
+    <button class="btn small" style="margin-top:8px;" onclick="changeAdminDisplayName()">حفظ الاسم</button>
+  </div>
+  </div><!-- /shipping-content -->
+</div><!-- /view-shipping -->
+</div><!-- /app-shell -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Generic confirm modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirm-title">تأكيد</div>
+    <div class="modal-text" id="confirm-text"></div>
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeConfirmModal()">إلغاء</button>
+      <button class="btn danger small" id="confirm-yes-btn">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- Approve merchant modal (enter username/password) + admin-controlled fee settings for this merchant -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal-box" style="max-height:85vh; overflow-y:auto;">
+    <div class="modal-title" id="approve-modal-title">قبول التاجر — أدخل بيانات الدخول</div>
+    <div id="approve-credentials-fields">
+      <label>اسم المستخدم</label><input id="approve-username">
+      <label>كلمة المرور</label><input type="password" id="approve-password">
+    </div>
+    <div class="card-title" style="margin-top:14px;">💰 مصدر رسم المنصة لهذا التاجر</div>
+    <div class="subtitle" style="margin-bottom:4px;">هذا القرار بيد الأدمن فقط — التاجر ما يقدر يغيّره من لوحته</div>
+    <div class="toggle-group" id="approve-fee-source-toggles"></div>
+    <label style="margin-top:8px;">طريقة حساب الرسم</label>
+    <div class="toggle-group" id="approve-fee-type-toggles"></div>
+    <div id="approve-fee-amount-fields"></div>
+    <div class="card-title" style="margin-top:14px;">➖ استقطاع ثابت من كل قطعة (اختياري)</div>
+    <div class="subtitle" style="margin-bottom:4px;">مبلغ إضافي يُخصم من رصيد التاجر عن كل قطعة تُباع، بجانب رسم المنصة أعلاه — ما يُضاف على سعر القطعة ولا يظهر للزبون إطلاقاً</div>
+    <label>الاستقطاع (دينار لكل قطعة)</label>
+    <input type="number" id="approve-item-deduction" onchange="setApproveItemDeduction(this.value)">
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeApproveModal()">إلغاء</button>
+      <button class="btn small" onclick="confirmApprove()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Terms & Privacy modal — reachable from login screen and storefront footer -->
+<div class="modal-overlay" id="legal-modal">
+  <div class="modal-box" style="max-width:560px; max-height:85vh; overflow-y:auto; text-align:right;">
+    <div class="modal-title">الشروط والأحكام وسياسة الخصوصية</div>
+    <div style="font-size:12.5px; line-height:1.9; color:var(--text);">
+      <b>١. طبيعة المنصة</b><br>
+      Billionaire منصة وسيطة تربط التجار بالزبائن وتتولى إدارة عملية التوصيل. المنصة ليست هي البائع، والتاجر هو المسؤول عن دقة وصف منتجاته وجودتها وتوفرها.<br><br>
+      <b>٢. الدفع</b><br>
+      الدفع حالياً يتم عند الاستلام (Cash on Delivery) فقط. المبلغ يُدفع نقداً عند استلام الطلب. لا يوجد حالياً دفع إلكتروني.<br><br>
+      <b>٣. التوصيل والإرجاع</b><br>
+      لو الزبون رفض الاستلام أو تعذر التوصيل، يُعتبر الطلب "مرجّع" وتتم إعادة الكمية لمخزون التاجر.<br><br>
+      <b>٤. رسوم المنصة</b><br>
+      تستقطع المنصة رسوم خدمة من التاجر و/أو الزبون حسب الإعدادات المتفق عليها عند قبول التاجر بالمنصة، وتظهر بالتفصيل بفاتورة كل طلب.<br><br>
+      <b>٥. الخصوصية وبيانات الزبون</b><br>
+      نجمع فقط البيانات اللازمة لإتمام الطلب: الاسم، رقم الهاتف، العنوان، والمحافظة. تُستخدم هذي البيانات حصراً للتواصل بخصوص الطلب وتسليمه، ولا تُشارك مع أي جهة خارج التاجر المرتبط بنفس الطلب.<br><br>
+      <b>٦. حسابات التجار</b><br>
+      كل حساب مسؤول عن سرية بيانات دخوله. المنصة لا تحتفظ بكلمات المرور بشكل قابل للقراءة — فقط بصيغة مشفّرة، ولا يمكن استرجاعها، بس يمكن تصفيرها من قبل الإدارة عند الحاجة.<br><br>
+      <b>٧. التعديلات</b><br>
+      يجوز تحديث هذي الشروط من وقت لآخر، ويُعتبر استمرار استخدام المنصة موافقة على أي تحديث.
+    </div>
+    <div class="modal-actions">
+      <button class="btn small" onclick="closeLegalModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset password modal: used for merchants. We only ever store a
+     hashed password, so there's nothing to "reveal" — the admin can only set a new one. -->
+<div class="modal-overlay" id="reset-password-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="reset-password-title">تصفير كلمة المرور</div>
+    <label>كلمة المرور الجديدة</label><input type="password" id="reset-password-input" placeholder="اكتب كلمة مرور جديدة">
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeResetPasswordModal()">إلغاء</button>
+      <button class="btn small" onclick="confirmResetPassword()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cancel-order reason modal — used by admin and merchant screens alike -->
+<div class="modal-overlay" id="cancel-reason-modal">
+  <div class="modal-box">
+    <div class="modal-title">إلغاء الطلب</div>
+    <label>اكتب سبب الإلغاء (يظهر بتقرير الحسابات)</label>
+    <textarea id="cancel-reason-input" rows="3" style="width:100%; padding:8px; font-family:inherit;" placeholder="مثلاً: الزبون ما يرد، أو تعذر الوصول للعنوان..."></textarea>
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeCancelReasonModal()">تراجع</button>
+      <button class="btn danger small" onclick="confirmCancelOrderGroup()">تأكيد الإلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Merchant store preview modal ("العدسة") — lets a merchant see exactly what customers will
+     see (banner, logo, colors, products) before their store is officially launched/approved.
+     Reuses renderStorefrontInto, which only blocks disabled stores — pending stores render fine. -->
+<div class="modal-overlay" id="merchant-preview-modal">
+  <div class="modal-box" style="max-width:480px; max-height:85vh; overflow-y:auto;">
+    <div class="modal-title">🔍 معاينة متجرك — هيك بالضبط راح يشوفه الزبون</div>
+    <div id="merchant-preview-content"></div>
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeMerchantPreview()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout modal: customer fills their info + picks governorate + fast/slow shipping -->
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal-box">
+    <div class="modal-title">إتمام الطلب</div>
+    <label>الاسم الكامل</label><input id="co-name" placeholder="اسمك الكامل">
+    <label>رقم الهاتف</label><input id="co-phone" placeholder="07xx xxx xxxx">
+    <label>العنوان التفصيلي</label><input id="co-address" placeholder="المنطقة، الشارع، أقرب نقطة دالة">
+    <label>المحافظة</label>
+    <select id="co-governorate" onchange="updateCheckoutDelivery()"></select>
+    <label>نوع الشحن</label>
+    <div class="toggle-group" id="co-speed-toggles"></div>
+    <div id="checkout-summary"></div>
+    <div id="checkout-error" style="color:#B8433A; font-size:12px; margin-top:4px;"></div>
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeCheckoutModal()">إلغاء</button>
+      <button class="btn small" id="checkout-confirm-btn">تأكيد الطلب</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cart modal: customer's shopping cart — holds multiple products/quantities before checkout -->
+<div class="modal-overlay" id="cart-modal">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-title">🛒 سلة المشتريات</div>
+    <div id="cart-items"></div>
+    <div class="empty" id="cart-empty" style="display:none;">السلة فارغة — أضف قطعة عشان تكدر تكمل الشراء</div>
+    <div id="cart-total-line"></div>
+    <div class="modal-actions">
+      <button class="btn secondary small" onclick="closeCartModal()">متابعة التسوق</button>
+      <button class="btn small" id="cart-checkout-btn" onclick="openCheckoutFromCart()">إتمام الشراء</button>
+    </div>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="admin.js"></script>
+<script src="merchant.js"></script>
+<script>
+// App boot: set up storage (Firebase, or the local fallback if that fails) first,
+// THEN load saved data. routeOnLoad() (called at the end of loadData) decides whether
+// to show a merchant's public store link, or the login screen.
+initStorage().then(() => {
+  loadData();
+  if (window.__usingLocalFallback) {
+    // Give this its own delay so it doesn't get lost among other startup toasts.
+    setTimeout(() => {
+      showToast('⚠️ تعذر الاتصال بقاعدة البيانات المركزية — تعمل الآن ببيانات محفوظة على هذا المتصفح فقط ولن تتزامن مع الأجهزة الأخرى. تحقق من الإنترنت وأعد تحميل الصفحة.', 6000);
+    }, 800);
+  }
+});
+</script>
+</body>
+</html>
